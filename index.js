@@ -1,4 +1,4 @@
-const Joi = require('joi');
+const Joi = require("joi");
 const express = require("express");
 const app = express();
 
@@ -19,27 +19,50 @@ app.get("/api/courses", (req, res) => {
 
 app.get("/api/courses/:id", (req, res) => {
   const course = courses.find(c => c.id === parseInt(req.params.id));
-  if(!course) res.status(404).send('The course with given id not found');
+  if (!course)
+    return res.status(404).send("The course with given id not found");
   res.send(course);
 });
 
-app.post('/api/courses',(req, res) => {
-    const schema = Joi.object({
-        name: Joi.string().min(3).required()
-    });
-    const result = schema.validate({name:req.body.name});
-    if(result.error) {
-        //400 bad request
-        res.status(400).send(result.error.details[0].message);
-        return;
-    }
-    const course = {
-        id: courses.length + 1,
-        name: req.body.name
-    }
-    courses.push(course);
-    res.send(courses);
-})
+app.post("/api/courses", (req, res) => {
+  const { error } = validateCourses(req.body);
+  if (error) return res.status(400).send(error.details[0].message);
+
+  const course = {
+    id: courses.length + 1,
+    name: req.body.name
+  };
+  courses.push(course);
+  res.send(courses);
+});
+
+app.put("/api/courses/:id", (req, res) => {
+  const course = courses.find(c => c.id === parseInt(req.params.id));
+  if (!course)
+    return res.status(404).send("The course with given id not found");
+
+  const { error } = validateCourses(req.body);
+  if (error) return res.status(400).send(error.details[0].message);
+
+  course.name = req.body.name;
+  res.send(course);
+});
+
+app.delete("/api/courses/:id", (req, res) => {
+  const course = courses.find(c => c.id === parseInt(req.params.id));
+  if (!course)
+    return res.status(404).send("The course with given id not found");
+  const index = courses.indexOf(course);
+  courses.splice(index, 1);
+  res.send(course);
+});
+
+function validateCourses(course) {
+  const schema = Joi.object({
+    name: Joi.string().min(3).required()
+  });
+  return schema.validate(course);
+}
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`Listening port at ${port}`);
